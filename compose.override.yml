@@ -67,7 +67,12 @@ services:
       SMTP_HOST: "mailpit"
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
-
+  frontend:
+    ports:
+      - "8080:80"
+    # 开发时可以挂载dist或者源码（可选）
+    # volumes:
+    #   - ./frontend:/app
   mailpit:
     image: axllent/mailpit
     ports:

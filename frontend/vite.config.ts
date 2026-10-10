@@ -1,26 +1,14 @@
-import path from "node:path"
-import tailwindcss from "@tailwindcss/vite"
-import { tanstackRouter } from "@tanstack/router-plugin/vite"
-import react from "@vitejs/plugin-react-swc"
-import { defineConfig } from "vite"
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  build: {
-    outDir: "../backend/app/frontend",
-    emptyOutDir: true,
-  },
+  plugins: [vue()],
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "./src"),
-    },
-  },
-  plugins: [
-    tanstackRouter({
-      target: "react",
-      autoCodeSplitting: true,
-    }),
-    react(),
-    tailwindcss(),
-  ],
+      '@': resolve(__dirname, 'src')
+    }
+  }
 })
+

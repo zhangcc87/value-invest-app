@@ -33,4 +33,5 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
-app.frontend("/", directory=FRONTEND_DIR)
+#该用vue单独前端部署，不再托管前端代码
+#app.frontend("/", directory=FRONTEND_DIR)
