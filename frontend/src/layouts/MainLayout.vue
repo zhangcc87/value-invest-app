@@ -1,11 +1,11 @@
 <template>
   <el-container style="height: 100vh;">
-    <el-aside :width="collapse ? '64px' : '200px'" style="background-color: var(--el-bg-color);border-right:1px solid var(--el-border-color);transition: width 0.3s;">
+    <el-aside :width="collapse ? '64px' : '240px'" style="background-color: var(--el-bg-color);border-right:1px solid var(--el-border-color);transition: width 0.3s;">
       <div class="sidebar-container">
         <!-- 顶部系统名称+图标 -->
         <div class="sidebar-header">
-          <el-icon size="24"><Box /></el-icon>
-          <span v-if="!collapse" class="sys-name">FastAPI管理后台</span>
+          <el-icon size="20"><Box /></el-icon>
+          <span v-if="!collapse" class="sys-name">Value Invest App</span>
         </div>
 
         <el-menu
@@ -132,11 +132,19 @@ onMounted(() => {
   gap: 10px;
   height: 56px;
   padding: 0 16px;
-  border-bottom: 1px solid var(--el-border-color);
+  /* ========== 移除标题下方分割线 ========== */
+  border-bottom: none;
+  padding: 0 20px; /* ✅ 和 el-menu-item 的左右内边距保持一致，实现水平对齐 */
+}
+.sidebar-header .el-icon {
+  font-size: 20px; /* ✅ 和菜单图标大小统一 */
 }
 .sys-name {
   font-size:16px;
   font-weight: 600;
+  white-space: nowrap; /* 禁止文字换行 */
+  overflow: hidden;    /* 超出部分隐藏 */
+  text-overflow: ellipsis; /* 文字过长显示省略号 */
 }
 .sidebar-container :deep(.el-menu) {
   border-right: none;
@@ -144,19 +152,23 @@ onMounted(() => {
 }
 .sidebar-footer {
   padding:12px 8px;
-  border-top: 1px solid var(--el-border-color);
+  border-top: none;
 }
 .header-left {
   display:flex;
   align-items:center;
 }
 
-/* ========== 自定义浅色模式菜单hover样式 ========== */
+/* ========== 浅色模式菜单hover 保持浅背景 ========== */
 :root:not(.dark) .el-menu-item:hover {
   --el-menu-hover-bg-color: #f5f7fa !important;
 }
-/* 激活选中的菜单背景，同步调浅 */
 :root:not(.dark) .el-menu-item.is-active {
   --el-menu-active-bg-color: #ecf5ff !important;
+}
+
+/* ========== 移除所有 el-card 标题下分割线 ========== */
+:deep(.el-card__header) {
+  border-bottom: none !important;
 }
 </style>
