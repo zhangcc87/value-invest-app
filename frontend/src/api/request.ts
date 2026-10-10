@@ -22,8 +22,10 @@ service.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('token')
       location.href = '/login'
+      ElMessage.warning('登录已过期，请重新登录')
+    } else {
+      ElMessage.error(err.response?.data?.detail || '请求失败')
     }
-    ElMessage.error(err.response?.data?.detail || '请求失败')
     return Promise.reject(err)
   }
 )

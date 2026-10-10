@@ -1,16 +1,3 @@
-<template>
-  <el-card style="width:400px;margin:100px auto;">
-    <el-form ref="formRef" :model="form">
-      <el-form-item label="邮箱" prop="email">
-        <el-input v-model="form.email"></el-input>
-      </el-form-item>
-      <el-form-item label="密码" prop="password">
-        <el-input v-model="form.password" type="password"></el-input>
-      </el-form-item>
-      <el-button type="primary" @click="handleLogin">登录</el-button>
-    </el-form>
-  </el-card>
-</template>
 <script setup lang="ts">
 import { ref } from 'vue'
 import request from '@/api/request'
@@ -25,6 +12,7 @@ const handleLogin = async () => {
   }), {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
   })
+  // 只保存 access_token
   localStorage.setItem('token', res.access_token)
   router.push('/')
 }
