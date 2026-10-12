@@ -26,8 +26,25 @@
                         <el-tag
                             :type="scope.row.is_active ? 'success' : 'danger'"
                         >
-                            {{ scope.row.is_active ? "活跃" : "不活跃" }}
+                            {{ scope.row.is_active ? "激活" : "禁用" }}
                         </el-tag>
+                    </template>
+                </el-table-column>
+                <!-- 操作列 -->
+                <el-table-column label="操作" width="180">
+                    <template #default="scope">
+                        <el-button
+                            size="small"
+                            type="primary"
+                            @click="openEditDialog(scope.row)"
+                            >编辑</el-button
+                        >
+                        <el-button
+                            size="small"
+                            type="danger"
+                            @click="handleDelete(scope.row)"
+                            >删除</el-button
+                        >
                     </template>
                 </el-table-column>
             </el-table>
@@ -105,13 +122,61 @@
                 >
             </template>
         </el-dialog>
+
+        <!-- 编辑用户弹窗 -->
+        <el-dialog v-model="editDialogVisible" title="编辑用户" width="620px">
+            <el-form
+                :model="editForm"
+                label-width="130px"
+                class="add-user-form"
+            >
+                <el-form-item label="姓名">
+                    <el-input v-model="editForm.full_name"></el-input>
+                </el-form-item>
+                <el-form-item label="邮箱">
+                    <el-input v-model="editForm.email"></el-input>
+                </el-form-item>
+                <el-form-item label="密码">
+                    <el-input
+                        v-model="editForm.password"
+                        show-password
+                        placeholder="留空则不修改密码"
+                    ></el-input>
+                </el-form-item>
+                <el-form-item label="角色">
+                    <el-select
+                        v-model="editForm.is_superuser"
+                        style="width: 100%"
+                    >
+                        <el-option label="管理员" :value="true"></el-option>
+                        <el-option label="普通用户" :value="false"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="是否激活">
+                    <el-switch
+                        v-model="editForm.is_active"
+                        active-text="激活"
+                        inactive-text="禁用"
+                    ></el-switch>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="editDialogVisible = false">取消</el-button>
+                <el-button
+                    type="primary"
+                    :loading="editLoading"
+                    @click="submitEditUser"
+                    >保存</el-button
+                >
+            </template>
+        </el-dialog>
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import request from "@/api/request";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 
 interface UserItem {
     id: string;
@@ -141,6 +206,18 @@ const addForm = ref({
     email: "",
     password: "",
     password_confirm: "",
+    is_superuser: false,
+    is_active: true,
+});
+
+// 编辑弹窗
+const editDialogVisible = ref(false);
+const editLoading = ref(false);
+const editForm = ref({
+    id: "",
+    full_name: "",
+    email: "",
+    password: "",
     is_superuser: false,
     is_active: true,
 });
@@ -205,6 +282,70 @@ const submitAddUser = async () => {
     } finally {
         submitLoading.value = false;
     }
+};
+
+// 打开编辑弹窗，回填数据
+const openEditDialog = (row: UserItem) => {
+    editForm.value = {
+        id: row.id,
+        full_name: row.full_name,
+        email: row.email,
+        password: "",
+        is_superuser: row.is_superuser,
+        is_active: row.is_active,
+    };
+    editDialogVisible.value = true;
+};
+
+// 提交编辑更新 PATCH /users/{id}
+const submitEditUser = async () => {
+    editLoading.value = true;
+    const payload: any = {
+        full_name: editForm.value.full_name,
+        email: editForm.value.email,
+        is_superuser: editForm.value.is_superuser,
+        is_active: editForm.value.is_active,
+    };
+    // 密码不为空才提交密码
+    if (editForm.value.password) {
+        if (editForm.value.password.length < 8) {
+            ElMessage.warning("密码最少8位");
+            editLoading.value = false;
+            return;
+        }
+        payload.password = editForm.value.password;
+    }
+    try {
+        await request.patch(`/users/${editForm.value.id}`, payload);
+        ElMessage.success("更新成功");
+        editDialogVisible.value = false;
+        await fetchUsers();
+    } catch (err) {
+        ElMessage.error("更新用户失败");
+    } finally {
+        editLoading.value = false;
+    }
+};
+
+// 删除用户
+const handleDelete = async (row: UserItem) => {
+    ElMessageBox.confirm(
+        `确定要删除用户【${row.full_name}】吗？删除后不可恢复`,
+        "删除确认",
+        {
+            confirmButtonText: "确定删除",
+            cancelButtonText: "取消",
+            type: "warning",
+        }
+    )
+        .then(async () => {
+            await request.delete(`/users/${row.id}`);
+            ElMessage.success("删除成功");
+            await fetchUsers();
+        })
+        .catch(() => {
+            // 用户取消
+        });
 };
 
 // 获取用户列表
