@@ -34,7 +34,7 @@ router = APIRouter(prefix="/users", tags=["users"])
     dependencies=[Depends(get_current_active_superuser)],
     response_model=UsersPublic,
 )
-def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
+def read_users(session: SessionDep, page: int = 1, size: int = 20) -> Any:
     """
     Retrieve users.
     """
@@ -42,8 +42,9 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     count_statement = select(func.count()).select_from(User)
     count = session.exec(count_statement).one()
 
+    skip = (page-1)*size;
     statement = (
-        select(User).order_by(col(User.created_at).desc()).offset(skip).limit(limit)
+        select(User).order_by(col(User.created_at).desc()).offset(skip).limit(size)
     )
     users = session.exec(statement).all()
 

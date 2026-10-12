@@ -38,9 +38,11 @@
                     background
                     :current-page="pageNum"
                     :page-size="pageSize"
+                    :page-sizes="[1, 10, 20, 50]"
                     :total="total"
-                    layout="prev, pager, next"
+                    layout="sizes, prev, pager, next"
                     @update:current-page="handlePageChange"
+                    @update:page-size="handleSizeChange"
                 />
             </div>
         </el-card>
@@ -122,7 +124,7 @@ const userList = ref<UserItem[]>([]);
 
 // 分页
 const pageNum = ref(1);
-const pageSize = ref(10);
+const pageSize = ref(20);
 const total = ref(0);
 
 // 添加弹窗
@@ -214,11 +216,19 @@ const fetchUsers = async () => {
         },
     });
     userList.value = res.data;
-    total.value = res.data.length;
+    total.value = res.count;
 };
 
+// 切换页码
 const handlePageChange = (page: number) => {
     pageNum.value = page;
+    fetchUsers();
+};
+
+// 切换每页条数
+const handleSizeChange = (newSize: number) => {
+    pageSize.value = newSize;
+    pageNum.value = 1; // 切换条数强制回到第一页
     fetchUsers();
 };
 
