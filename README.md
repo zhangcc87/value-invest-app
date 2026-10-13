@@ -1,88 +1,67 @@
-# Full Stack FastAPI Template
+# Value Invest App
 
-[![Test Docker Compose](../../actions/workflows/test-docker-compose.yml/badge.svg)](../../actions/workflows/test-docker-compose.yml)
-[![Test Backend](../../actions/workflows/test-backend.yml/badge.svg)](../../actions/workflows/test-backend.yml)
+A full-stack application with a **FastAPI** backend API and a **Vue 3** single-page
+frontend, wired together with Docker Compose. The frontend is deployed separately
+(static files served by nginx); the backend serves the API only.
 
-## Technology Stack and Features
+## Technology Stack
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-  - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-  - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-  - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-  - 🧩 Built into the backend application and served by FastAPI on the same domain as the API.
-  - 💃 Using TypeScript, hooks, [Vite](https://vitejs.dev), and other parts of a modern frontend stack.
-  - 🎨 [Tailwind CSS](https://tailwindcss.com) and [shadcn/ui](https://ui.shadcn.com) for the frontend components.
-  - 🤖 An automatically generated frontend client.
-  - 🧪 [Playwright](https://playwright.dev) for end-to-end testing.
-  - 🦇 Dark mode support.
-- ☁️ [FastAPI Cloud](https://fastapicloud.com) for deployment.
-- 🐋 [Docker Compose](https://www.docker.com) for local services and self-hosted deployment.
-  - 📞 [Traefik](https://traefik.io) as a reverse proxy with automatic HTTPS.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email-based password recovery.
-- ✉️ [React Email](https://react.email) for email templates.
-- 📬 [Mailpit](https://mailpit.axllent.org) for local email testing during development.
+**Backend**
+
+- ⚡ [FastAPI](https://fastapi.tiangolo.com) for the REST API.
+  - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for models and database access.
+  - 🔍 [Pydantic](https://docs.pydantic.dev) for validation and settings.
+  - 💾 [PostgreSQL](https://www.postgresql.org) as the database.
+  - 🐘 [Alembic](https://alembic.sqlalchemy.org) for migrations.
+- 🔑 JWT authentication and secure password hashing.
+- 📫 Email sending over SMTP (templates authored with [React Email](https://react.email) and rendered as Jinja HTML).
 - ✅ Tests with [Pytest](https://pytest.org).
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
 
-### Dashboard Login
+**Frontend**
 
-![Dashboard login screenshot](img/login.png)
+- 🚀 [Vue 3](https://vuejs.org) + TypeScript + [Vite](https://vitejs.dev).
+- 🎨 [Element Plus](https://element-plus.org) components, with light/dark themes.
+- 🧭 `vue-router` with an auth guard; `axios` client that attaches the JWT.
+- 📦 Built to static files and served by nginx (its own container), independently of the API.
 
-### Dashboard - Admin
+**Tooling**
 
-![Admin dashboard screenshot](img/dashboard.png)
+- 🐋 [Docker Compose](https://docs.docker.com) for local services and deployment.
+  - 📞 [Traefik](https://traefik.io) as a reverse proxy with automatic HTTPS (deployment).
+- 📦 [uv](https://docs.astral.sh/uv/) for Python; [bun](https://bun.sh) workspaces for JavaScript.
+- ✅ Linting/formatting via [prek](https://prek.j178.dev/) (pre-commit), ruff, mypy, ty, and `vue-tsc`.
+- 📬 [Mailpit](https://mailpit.axllent.org) for local email testing during development.
 
-### Dashboard - Items
+## Getting Started
 
-![Items dashboard screenshot](img/dashboard-items.png)
+Start the supporting services and run the two dev servers side by side. See
+[development.md](./development.md) for the full walkthrough.
 
-### Dashboard - Dark Mode
+```bash
+# 1. Supporting services
+docker compose up -d db mailpit
 
-![Dark mode dashboard screenshot](img/dashboard-dark.png)
+# 2. Backend (from ./backend)
+uv sync
+uv run bash scripts/prestart.sh
+uv run fastapi dev                   # http://localhost:8000
 
-### React Email Templates
+# 3. Frontend (from the repo root)
+bun install
+bun run dev                          # http://localhost:5173
+```
 
-![Email templates screenshot](img/react-email.png)
+- Interactive API docs (Swagger UI): <http://localhost:8000/docs>
+- Frontend dev server: <http://localhost:5173>
+- Mailpit (captured emails): <http://localhost:8025>
 
-### Mailpit - Local Email Testing
+## Documentation
 
-![Mailpit screenshot](img/mailpit.png)
-
-### Interactive API Documentation
-
-![API docs](img/docs.png)
-
-## How to Use It
-
-Click the **Use this template** button at the top of this page to create a new repository.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-FastAPI Cloud deployment: [deployment.md](./deployment.md).
-
-Self-hosted deployment with Docker Compose: [deployment-docker-compose.md](./deployment-docker-compose.md).
-
-## Development
-
-General development docs: [development.md](./development.md).
-
-This includes the local FastAPI and Vite workflow, Docker Compose services, `.env` configuration, and more.
-
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
+- Backend: [backend/README.md](./backend/README.md)
+- Development: [development.md](./development.md)
+- Deployment to FastAPI Cloud: [deployment.md](./deployment.md)
+- Self-hosted deployment with Docker Compose: [deployment-docker-compose.md](./deployment-docker-compose.md)
 
 ## License
 
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+MIT — see [LICENSE](./LICENSE).

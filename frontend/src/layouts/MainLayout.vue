@@ -167,11 +167,6 @@ const fetchMe = async () => {
     }
 };
 
-const logout = () => {
-    localStorage.removeItem("token");
-    router.push("/login");
-};
-
 // 页面加载读取上次保存的主题
 onMounted(() => {
     fetchMe();

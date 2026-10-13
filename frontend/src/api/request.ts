@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { type AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 
 const service = axios.create({
@@ -29,4 +29,14 @@ service.interceptors.response.use(
     return Promise.reject(err)
   }
 )
-export default service
+// The response interceptor unwraps `res.data`, so callers receive the payload
+// directly instead of an AxiosResponse. Reflect that in the exported type.
+interface Request {
+  get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>
+  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+  patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>
+  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>
+}
+
+export default service as unknown as Request

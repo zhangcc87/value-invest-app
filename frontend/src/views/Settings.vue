@@ -18,12 +18,14 @@
                             <el-form-item label="Full name">
                                 <el-input
                                     v-model="profileForm.full_name"
+                                    style="width: 500px"
                                     :disabled="!isEdit"
                                 ></el-input>
                             </el-form-item>
                             <el-form-item label="Email">
                                 <el-input
                                     v-model="profileForm.email"
+                                    style="width: 500px"
                                     disabled
                                 ></el-input>
                             </el-form-item>
@@ -58,7 +60,7 @@
                             <el-input
                                 v-model="passwordForm.current_password"
                                 show-password
-                                style="width: 360px"
+                                style="width: 500px"
                             ></el-input>
                         </el-form-item>
                         <el-form-item
@@ -68,7 +70,7 @@
                             <el-input
                                 v-model="passwordForm.new_password"
                                 show-password
-                                style="width: 360px"
+                                style="width: 500px"
                                 @input="validatePasswordForm"
                             ></el-input>
                         </el-form-item>
@@ -80,7 +82,7 @@
                             <el-input
                                 v-model="passwordForm.new_password_confirm"
                                 show-password
-                                style="width: 360px"
+                                style="width: 500px"
                                 @input="validatePasswordForm"
                             ></el-input>
                         </el-form-item>
@@ -100,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import request from "@/api/request";
 import { ElMessage } from "element-plus";
 

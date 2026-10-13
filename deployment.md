@@ -1,6 +1,8 @@
 # FastAPI Project - Deployment
 
-Deploy the project to [FastAPI Cloud](https://fastapicloud.com) with the included GitHub Actions workflow.
+Deploy the **backend API** to [FastAPI Cloud](https://fastapicloud.com) with the included GitHub Actions workflow.
+
+The Vue frontend is deployed separately — the backend no longer serves it. Deploy it with the nginx container described in the [Docker Compose deployment guide](./deployment-docker-compose.md), or host the `frontend/dist` build on any static host.
 
 ## Create the FastAPI Cloud Application
 
@@ -44,7 +46,7 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ## Configure Continuous Deployment
 
-The included `.github/workflows/deploy.yml` workflow builds the frontend, prepares the database, and deploys the application whenever changes are pushed to `master`. You can also run it manually from the **Actions** tab.
+The included `.github/workflows/deploy.yml` workflow prepares the database and deploys the backend whenever changes are pushed to `master`. You can also run it manually from the **Actions** tab. (The workflow still builds the frontend as part of the pipeline; since the backend no longer serves it, deploy the frontend separately.)
 
 Log in to FastAPI Cloud and configure the [deploy token](https://fastapicloud.com/docs/advanced-features/deploy-tokens/) and application ID as GitHub repository secrets:
 
@@ -70,15 +72,15 @@ Use the same values configured in FastAPI Cloud. For `DATABASE_URL`, use the con
 
 The deployment workflow performs these steps:
 
-1. Installs and builds the frontend into `backend/app/frontend`.
+1. Installs the frontend and Python dependencies.
 2. Runs `backend/scripts/prestart.sh` to apply database migrations and create the first superuser.
-3. Deploys the project with `uv run fastapi deploy`.
+3. Deploys the backend with `uv run fastapi deploy`.
 
 ## URLs
 
 Replace `your-app.fastapicloud.dev` with the URL of your FastAPI Cloud application.
 
-Application (frontend and API): `https://your-app.fastapicloud.dev`
+API: `https://your-app.fastapicloud.dev`
 
 Interactive API docs: `https://your-app.fastapicloud.dev/docs`
 

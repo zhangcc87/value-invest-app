@@ -58,7 +58,7 @@ docker compose -f compose.yml -f compose.deploy.yml up -d
 
 The `compose.deploy.yml` file adds HTTPS and automatic certificate handling to the shared `compose.yml` configuration. Explicitly listing both files excludes the local settings from `compose.override.yml`.
 
-The backend Docker image builds the frontend, so the server does not need Bun or prebuilt frontend files.
+Compose builds both the backend and the frontend as Docker images (the frontend image runs nginx), so the server only needs Docker — no Bun or prebuilt frontend files required.
 
 ## Deploy with GitHub Actions
 
@@ -122,8 +122,12 @@ When the runner is online, open the repository's **Actions** tab, select **Deplo
 
 Replace `fastapi-project.example.com` with your domain.
 
-Application (frontend and API): `https://fastapi-project.example.com`
+Application (frontend): `https://fastapi-project.example.com`
+
+Backend API (same origin, proxied by nginx): `https://fastapi-project.example.com/api/v1`
 
 Interactive API docs: `https://fastapi-project.example.com/docs`
 
 Adminer: `https://adminer.fastapi-project.example.com`
+
+Traefik routes the domain to the `frontend` service (nginx), which serves the static app and proxies `/api/v1`, `/docs`, and `/redoc` to the internal `backend` service.

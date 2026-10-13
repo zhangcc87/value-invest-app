@@ -19,7 +19,6 @@ extend-exclude = [
     "bun.lock",
     "backend/coverage/",
     "backend/htmlcov/",
-    "backend/app/frontend/",
     "frontend/dist/",
     "frontend/public/assets/images/",
 ]

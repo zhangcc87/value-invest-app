@@ -1,4 +1,4 @@
-# FastAPI Project - Development
+# Value Invest App - Development
 
 ## Local Development
 
@@ -32,29 +32,28 @@ bun run dev
 
 Now you can open these URLs:
 
-Frontend development server: <http://localhost:5173>
+- Frontend development server: <http://localhost:5173>
+- Backend API: <http://localhost:8000>
+- Interactive API documentation (Swagger UI): <http://localhost:8000/docs>
+- Mailpit: <http://localhost:8025>
 
-Backend API: <http://localhost:8000>
+The frontend development server calls the backend at `http://localhost:8000`, as configured in `frontend/.env.development` (`VITE_API_URL`).
 
-Automatic interactive API documentation with Swagger UI: <http://localhost:8000/docs>
+## Frontend Build
 
-Mailpit: <http://localhost:8025>
+The frontend is a standalone Vue app; the backend no longer serves it.
 
-The frontend development server uses the backend at `http://localhost:8000`, as configured in `frontend/.env`.
-
-### Frontend Served by FastAPI
-
-Build the frontend from the `frontend` directory:
+Build it from the `frontend` directory:
 
 ```bash
 bun run build
 ```
 
-The build is written to `backend/app/frontend` and served by FastAPI at <http://localhost:8000>. Rebuild the frontend after making frontend changes.
+The build (type-check with `vue-tsc` + Vite) is written to `frontend/dist`. In production it is served by nginx via `frontend/Dockerfile` and `frontend/nginx.conf`, which also proxies `/api/v1` to the backend. For production, `frontend/.env.production` sets `VITE_API_URL=/api/v1`, so the browser talks to the same origin and nginx forwards API calls to the backend.
 
 ## Full Stack with Docker Compose
 
-To run the backend and built frontend in Docker Compose:
+To run the backend and the built frontend in Docker Compose:
 
 ```bash
 docker compose run --rm backend bash scripts/prestart.sh
@@ -63,15 +62,12 @@ docker compose watch
 
 Now you can open these URLs:
 
-Application, with the frontend and API served by FastAPI: <http://localhost:8000>
-
-Automatic interactive API documentation with Swagger UI: <http://localhost:8000/docs>
-
-Adminer, database web administration: <http://localhost:8080>
-
-Traefik UI, to see how the routes are being handled by the proxy: <http://localhost:8090>
-
-Mailpit: <http://localhost:8025>
+- Frontend (nginx): <http://localhost:8080>
+- Backend API: <http://localhost:8000>
+- Interactive API documentation (Swagger UI): <http://localhost:8000/docs>
+- Adminer, database web administration: <http://localhost:8081>
+- Traefik UI, to see how the routes are being handled by the proxy: <http://localhost:8090>
+- Mailpit: <http://localhost:8025>
 
 Stop a locally running FastAPI server before starting the Compose backend because both use port `8000`.
 
@@ -85,7 +81,7 @@ Stop a locally running FastAPI server before starting the Compose backend becaus
 
 The main `compose.yml` file contains the configuration shared by the whole stack. Docker Compose loads it automatically.
 
-The `compose.override.yml` file adds local development settings, such as mounting the source code as a volume. Docker Compose also loads it automatically and applies it on top of `compose.yml`.
+The `compose.override.yml` file adds local development settings, such as published ports and mounting the source code as a volume. Docker Compose also loads it automatically and applies it on top of `compose.yml`.
 
 The `compose.deploy.yml` file contains the deployment-specific settings, including HTTPS and automatic certificate handling. It is explicitly combined with `compose.yml` when deploying the application.
 
@@ -136,3 +132,9 @@ You can also run `prek` manually on all files from the project root:
 ```bash
 uv run prek run --all-files
 ```
+
+### What Runs
+
+- **Backend**: `ruff check`, `ruff format`, `mypy`, and `ty` over `backend/app`.
+- **Frontend**: `vue-tsc -b` (type check) via `npm --prefix frontend run lint` when files under `frontend/` change.
+- **Other**: typos, YAML/TOML checks, end-of-file and trailing-whitespace fixers.

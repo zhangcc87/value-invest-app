@@ -46,7 +46,7 @@ $ docker compose run --rm backend bash scripts/prestart.sh
 $ docker compose watch
 ```
 
-The application is available at `http://localhost:8000`.
+The backend API is available at `http://localhost:8000` and the frontend at `http://localhost:8080`.
 
 ### Docker Compose Override
 
