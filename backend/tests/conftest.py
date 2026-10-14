@@ -2,19 +2,34 @@ from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, delete
+from sqlmodel import Session, SQLModel, create_engine, delete
 
+from app.api.deps import get_db
 from app.core.config import settings
-from app.core.db import engine, init_db
 from app.main import app
 from app.models import Item, User
+from app.services.seed import init_db
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
+
+assert settings.TEST_DATABASE_URL is not None, (
+    "TEST_DATABASE_URL is not set. Add it to the root .env so the test suite runs "
+    "against a dedicated database instead of truncating development data."
+)
+test_engine = create_engine(str(settings.TEST_DATABASE_URL), pool_pre_ping=True)
+
+
+def _get_test_session() -> Generator[Session]:
+    with Session(test_engine) as session:
+        yield session
 
 
 @pytest.fixture(scope="session", autouse=True)
 def db() -> Generator[Session]:
-    with Session(engine) as session:
+    SQLModel.metadata.drop_all(test_engine)
+    SQLModel.metadata.create_all(test_engine)
+    app.dependency_overrides[get_db] = _get_test_session
+    with Session(test_engine) as session:
         init_db(session)
         yield session
         statement = delete(Item)
@@ -22,6 +37,7 @@ def db() -> Generator[Session]:
         statement = delete(User)
         session.execute(statement)
         session.commit()
+    app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture(scope="module")

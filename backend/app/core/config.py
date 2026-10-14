@@ -12,6 +12,13 @@ from pydantic import (
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _rewrite_to_psycopg(database_url: str) -> str:
+    for scheme in ("postgres://", "postgresql://"):
+        if database_url.startswith(scheme):
+            return database_url.replace(scheme, "postgresql+psycopg://", 1)
+    return database_url
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./backend/)
@@ -29,15 +36,19 @@ class Settings(BaseSettings):
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
     DATABASE_URL: PostgresDsn
+    # Dedicated database for the test suite. When set, tests run against it so
+    # they never truncate development data. Optional: only tests require it.
+    TEST_DATABASE_URL: PostgresDsn | None = None
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def _use_psycopg_driver(cls, value: str | PostgresDsn) -> str:
-        database_url = str(value)
-        for scheme in ("postgres://", "postgresql://"):
-            if database_url.startswith(scheme):
-                return database_url.replace(scheme, "postgresql+psycopg://", 1)
-        return database_url
+        return _rewrite_to_psycopg(str(value))
+
+    @field_validator("TEST_DATABASE_URL", mode="before")
+    @classmethod
+    def _test_db_use_psycopg_driver(cls, value: str | PostgresDsn | None) -> str | None:
+        return None if value is None else _rewrite_to_psycopg(str(value))
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False

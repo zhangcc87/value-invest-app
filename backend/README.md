@@ -29,7 +29,7 @@ The API is available at `http://localhost:8000`, with automatic interactive docs
 
 Run backend commands from `./backend/` with `uv run`. Make sure your editor uses the Python interpreter at `.venv/bin/python` in the project root.
 
-Modify or add SQLModel models for data and SQL tables in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, CRUD (Create, Read, Update, Delete) utils in `./backend/app/crud.py`.
+Modify or add SQLModel table models in `./backend/app/models/`, DTO schemas in `./backend/app/schemas/`, DB access in `./backend/app/repositories/`, business logic in `./backend/app/services/`, and API endpoints in `./backend/app/api/`.
 
 ## VS Code
 
@@ -68,6 +68,14 @@ $ uv run bash scripts/test.sh
 
 The tests run with Pytest. Modify existing tests or add new ones in `./backend/tests/`.
 
+The suite runs against a dedicated test database (`TEST_DATABASE_URL`, default `app_test`), so it never truncates your development data. Create it once if it doesn't exist:
+
+```console
+$ docker compose exec db psql -U postgres -d postgres -c "CREATE DATABASE app_test"
+```
+
+The test schema is created automatically by the `db` fixture on each run.
+
 If you use GitHub Actions, the tests will run automatically.
 
 ### Test a Running Stack
@@ -94,7 +102,7 @@ When the tests run, they generate `htmlcov/index.html`. Open it in your browser 
 
 Make sure you create a revision of your models and upgrade the database with that revision every time you change them. From the `backend` directory, use `uv` to run Alembic against the PostgreSQL container:
 
-* Alembic is already configured to import your SQLModel models from `./backend/app/models.py`.
+* Alembic is already configured to import your SQLModel models from `./backend/app/models/`.
 
 * After changing a model (for example, adding a column), create a revision:
 
@@ -136,7 +144,7 @@ To preview the emails while editing them, start the dev server from the root of 
 $ bun run email:dev
 ```
 
-Values coming from the backend are declared as Jinja placeholders in the component props, for example `username = "{{ username }}"`. The context for each email is built in `generate_*_email()` in `./backend/app/utils.py`, so a new placeholder needs to be added there too.
+Values coming from the backend are declared as Jinja placeholders in the component props, for example `username = "{{ username }}"`. The context for each email is built in `generate_*_email()` in `./backend/app/services/email.py`, so a new placeholder needs to be added there too.
 
 Once you are done, regenerate the templates used by the application:
 
