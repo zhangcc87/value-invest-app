@@ -18,6 +18,7 @@ dependencies = [
     "sentry-sdk[fastapi]>=2.68.1,<3.0.0",
     "pyjwt<3.0.0,>=2.13.0",
     "pwdlib[argon2,bcrypt]>=0.3.1",
+    "baostock>=0.9.4",
 ]
 
 [dependency-groups]
@@ -36,6 +37,11 @@ build-backend = "hatchling.build"
 [tool.mypy]
 strict = true
 exclude = ["venv", ".venv", "alembic"]
+
+[[tool.mypy.overrides]]
+# baostock ships no type hints; all baostock usage is isolated in app/datasources/.
+module = ["baostock.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py314"

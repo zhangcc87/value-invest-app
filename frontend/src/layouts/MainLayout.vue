@@ -21,7 +21,7 @@
                     router
                     :collapse="collapse"
                     collapse-transition
-                    default-active="$route.path"
+                    :default-active="$route.path"
                     background-color="var(--el-bg-color)"
                     text-color="var(--el-text-color-primary)"
                     active-text-color="#409eff"
@@ -29,6 +29,10 @@
                     <el-menu-item index="/dashboard">
                         <el-icon><House /></el-icon>
                         <template #title>仪表盘</template>
+                    </el-menu-item>
+                    <el-menu-item index="/stocks">
+                        <el-icon><TrendCharts /></el-icon>
+                        <template #title>股票列表</template>
                     </el-menu-item>
                     <el-menu-item index="/users">
                         <el-icon><User /></el-icon>
@@ -113,6 +117,7 @@ import {
     Expand,
     ArrowDown,
     Setting,
+    TrendCharts,
     TurnOff,
 } from "@element-plus/icons-vue";
 import request from "@/api/request";

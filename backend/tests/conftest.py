@@ -7,7 +7,7 @@ from sqlmodel import Session, SQLModel, create_engine, delete
 from app.api.deps import get_db
 from app.core.config import settings
 from app.main import app
-from app.models import Item, User
+from app.models import DailyQuote, FinancialReport, Item, Stock, SyncRun, User
 from app.services.seed import init_db
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
@@ -32,10 +32,15 @@ def db() -> Generator[Session]:
     with Session(test_engine) as session:
         init_db(session)
         yield session
-        statement = delete(Item)
-        session.execute(statement)
-        statement = delete(User)
-        session.execute(statement)
+        for model in (
+            DailyQuote,
+            FinancialReport,
+            Stock,
+            SyncRun,
+            Item,
+            User,
+        ):
+            session.execute(delete(model))
         session.commit()
     app.dependency_overrides.pop(get_db, None)
 

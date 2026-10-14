@@ -67,6 +67,11 @@ class Settings(BaseSettings):
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
 
+    # Stock data sync (baostock)
+    STOCK_SYNC_PACE_SECONDS: float = 0.1  # sleep between upstream requests
+    STOCK_SYNC_RETRY: int = 3  # retries per upstream request
+    STOCK_SYNC_BACKFILL_QUARTERS: int = 12  # default financial history depth
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def emails_enabled(self) -> bool:

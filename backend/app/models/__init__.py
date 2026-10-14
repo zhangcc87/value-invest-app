@@ -1,6 +1,10 @@
 from sqlmodel import SQLModel
 
 from app.models.base import get_datetime_utc
+from app.models.financial import FinancialReport
+from app.models.quote import DailyQuote
+from app.models.stock import Stock
+from app.models.sync import SyncRun
 from app.models.tables import Item, User
 from app.schemas.item import (
     ItemBase,
@@ -8,6 +12,17 @@ from app.schemas.item import (
     ItemPublic,
     ItemsPublic,
     ItemUpdate,
+)
+from app.schemas.stock import (
+    DailyQuoteBase,
+    DailyQuotePublic,
+    FinancialReportBase,
+    FinancialReportPublic,
+    StockBase,
+    StockPublic,
+    StocksPublic,
+    SyncRunPublic,
+    SyncRunsPublic,
 )
 from app.schemas.token import Message, NewPassword, Token, TokenPayload
 from app.schemas.user import (
@@ -23,6 +38,12 @@ from app.schemas.user import (
 )
 
 __all__ = [
+    "DailyQuote",
+    "DailyQuoteBase",
+    "DailyQuotePublic",
+    "FinancialReport",
+    "FinancialReportBase",
+    "FinancialReportPublic",
     "Item",
     "ItemBase",
     "ItemCreate",
@@ -33,6 +54,13 @@ __all__ = [
     "NewPassword",
     "PrivateUserCreate",
     "SQLModel",
+    "Stock",
+    "StockBase",
+    "StockPublic",
+    "StocksPublic",
+    "SyncRun",
+    "SyncRunPublic",
+    "SyncRunsPublic",
     "Token",
     "TokenPayload",
     "UpdatePassword",

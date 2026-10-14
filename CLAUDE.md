@@ -16,7 +16,7 @@ A fork of the [tiangolo full-stack-fastapi-template](https://github.com/fastapi/
 - `backend/app/main.py` has the `app.frontend(...)` mount **commented out** — FastAPI serves the API only, and `backend/Dockerfile` does not build a frontend.
 - Frontend build output is `frontend/dist` (Vite default), served by `frontend/nginx.conf` (its own nginx image).
 - Package manager at the root is **bun** (workspaces: `frontend`, `packages/*`), but `bun` is **not installed locally** — invoke it via `npx -y bun@1.3.12 <cmd>` (that is how `bun.lock` is regenerated). The `frontend/Dockerfile` uses `npm` internally.
-- Backend model domain is still the template's `User` / `Item` (`backend/app/models/tables.py`); the "value-invest" domain has not been modeled yet.
+- `User` / `Item` remain the template's models (`backend/app/models/tables.py`). A separate **value-invest (A-share) domain** now exists alongside them: `Stock` / `DailyQuote` / `FinancialReport` / `SyncRun`, sourced from baostock. Only the **data foundation** is built so far — rules, screening, and recommendation are not (see "Stock data (Phase 1)" below).
 - **Deployment routing:** Traefik routes the domain to the `frontend` service (nginx), which serves the static files and proxies `/api/v1`, `/docs`, and `/redoc` to the `backend` service. The backend has no Traefik router and is internal-only. See `compose.yml` and `frontend/nginx.conf`.
 
 ## Commands
@@ -68,7 +68,19 @@ Backend linting is strict: mypy `strict = true`, ruff with `T201` (no `print()` 
 # from ./backend
 uv run alembic revision --autogenerate -m "message"   # after changing app/models/
 uv run alembic upgrade head
+uv run alembic check                                  # must report no drift
 ```
+New table models **must** be exported from `backend/app/models/__init__.py`, or autogenerate won't see them (and may emit a DROP).
+
+### Stock data sync (baostock)
+```bash
+# from ./backend
+uv run python app/sync_data.py stocks                            # master data + industry
+uv run python app/sync_data.py daily --universe hs300            # price + valuation
+uv run python app/sync_data.py financial --codes sh.600519 --quarters 4
+uv run python app/sync_data.py all                               # overnight full backfill
+```
+CLI only — trigger from cron (there is no in-app scheduler). Details, cost, and caveats: `backend/README.md` and "Stock data (Phase 1)" below.
 
 ### Full stack via Docker Compose
 ```bash
@@ -87,14 +99,23 @@ App via Traefik: http://localhost:8000 (backend) · http://localhost:8080 (front
 
 ### Backend layout
 The backend is layered: **`api` → `services` → `repositories`**. Keep the layers separate when adding code.
-- `backend/app/api/routes/` — thin HTTP layer: param validation + call a service + return. `login.py`, `users.py`, `items.py`, `utils.py`, and `private.py` (only mounted when `FASTAPI_ENV == "development"`; see `backend/app/api/main.py`). Routes must **not** call `session.commit()`.
-- `backend/app/services/` — business logic and the **transaction boundary** (the only layer that calls `session.commit()`). `user.py`, `auth.py`, `item.py`, `email.py` (React-Email/Jinja rendering + sending), `seed.py` (initial data).
-- `backend/app/repositories/` — pure DB access (`add`/`flush`/`refresh`, queries). **Never commits**, never raises HTTP.
-- `backend/app/models/` — SQLModel **table** models (`table=True`): `tables.py` (`User` + `Item`), `base.py` (`get_datetime_utc`). `User` and `Item` must stay in the **same module** (bidirectional `Relationship` breaks if split across files with SQLModel). `models/__init__.py` re-exports `SQLModel` + the table models for alembic.
-- `backend/app/schemas/` — pydantic DTOs (no `table=True`): `user.py`, `item.py`, `token.py`. Schemas must not import `models`.
+- `backend/app/api/routes/` — thin HTTP layer: param validation + call a service + return. `login.py`, `users.py`, `items.py`, `utils.py`, `stocks.py` (read-only stock data), and `private.py` (only mounted when `FASTAPI_ENV == "development"`; see `backend/app/api/main.py`). Routes must **not** call `session.commit()`.
+- `backend/app/services/` — business logic and the **transaction boundary** (the only layer that calls `session.commit()`). `user.py`, `auth.py`, `item.py`, `email.py` (React-Email/Jinja rendering + sending), `seed.py` (initial data), `stock.py` (read-only stock queries), `sync.py` (baostock sync orchestration).
+- `backend/app/repositories/` — pure DB access (`add`/`flush`/`refresh`, queries). **Never commits**, never raises HTTP. `upsert.py` holds `bulk_upsert` (`INSERT ... ON CONFLICT DO UPDATE`) used by the stock/time-series repos.
+- `backend/app/datasources/` — external IO adapters, the layer **below** repositories. `base.py` defines the record dataclasses + the `StockDataSource` `Protocol`; `baostock.py` implements it. Sync services depend on the Protocol, never on baostock, so tests inject `tests/utils/fake_datasource.py` and stay offline. **Never import pandas** in app code (it breaks mypy strict).
+- `backend/app/models/` — SQLModel **table** models (`table=True`): `tables.py` (`User` + `Item`), `stock.py` / `quote.py` / `financial.py` / `sync.py` (the A-share domain), `base.py` (`get_datetime_utc`). `User` and `Item` must stay in the **same module** (bidirectional `Relationship` breaks if split across files with SQLModel); the stock tables deliberately have **no** `Relationship`, only FK columns. `models/__init__.py` re-exports `SQLModel` + every table model for alembic — **a new table must be exported there or autogenerate will miss it**.
+- `backend/app/schemas/` — pydantic DTOs (no `table=True`): `user.py`, `item.py`, `token.py`, `stock.py`. Schemas must not import `models`.
 - `backend/app/core/` — `config.py` (settings), `db.py` (engine only), `security.py`.
+- `backend/app/sync_data.py` — CLI to sync market data (see "Stock data" below). Not a route; long-running work never runs inside the web process.
 - `backend/app/api/main.py` picks the health-check and routes; all routes are under `settings.API_V1_STR` (`/api/v1`).
 - Users list is paginated with **`?page=` and `?size=` query params** (not `skip`/`limit`) and returns `{data, count}`.
+
+### Stock data (Phase 1: data foundation)
+- Source is **baostock** (free, no token). Four tables: `Stock` (PK `code`, e.g. `sh.600519`), `DailyQuote` (composite PK `code`+`trade_date`, OHLCV + `pe_ttm`/`pb_mrq`/`ps_ttm`/`pcf_ncf_ttm`), `FinancialReport` (composite PK `code`+`stat_date`, a **wide** table covering six baostock statements + `pub_date`), `SyncRun` (bookkeeping, uuid PK). `dailyquote`/`financialreport` FKs to `stock.code` with `ON DELETE CASCADE`.
+- **Natural/composite PKs are deliberate** (not the template's uuid convention): they let the sync write with `ON CONFLICT DO UPDATE`, so re-running a range is idempotent. Progress is derived from the data itself (daily from `max(trade_date)`, financial from stored periods) — there is no progress table.
+- Ratios are stored as **decimals exactly as baostock returns them** (`roe_avg=0.3446` == 34.46%). Missing values arrive as `''` and the adapter converts them to `None`. `pub_date` exists for point-in-time screening (`pub_date <= as_of`) — enforce that in the screening phase or you get look-ahead bias.
+- Sync only runs from `backend/app/sync_data.py` (`stocks` / `daily` / `financial` / `all` + `--universe`, `--codes`, `--start`/`--end`, `--quarters`, `--statements`, `--pace`); trigger via cron. A full-market 3-year backfill is an overnight job. Read endpoints live in `stocks.py`; only `/stocks/sync/runs` requires superuser.
+- baostock covers **only SH/SZ** — no 北交所 (BJ) data.
 
 ### Frontend ↔ backend contract
 - Dev: `frontend/.env.development` sets `VITE_API_URL=http://localhost:8000/api/v1`.
@@ -108,4 +129,5 @@ The backend is layered: **`api` → `services` → `repositories`**. Keep the la
 ## Conventions
 
 - Comments and UI strings in the frontend are in Chinese; match that style when editing frontend files.
-- Keep the backend layered: table models in `backend/app/models/`, DTOs in `backend/app/schemas/`, DB access in `backend/app/repositories/`, business logic in `backend/app/services/`, and endpoints in `backend/app/api/routes/`. Routes stay thin (no `session.commit()`); repositories never commit.
+- Keep the backend layered: table models in `backend/app/models/`, DTOs in `backend/app/schemas/`, DB access in `backend/app/repositories/`, business logic in `backend/app/services/`, external IO in `backend/app/datasources/`, and endpoints in `backend/app/api/routes/`. Routes stay thin (no `session.commit()`); repositories never commit.
+- New stock-domain tables use **natural/composite primary keys** and FK columns only (no SQLModel `Relationship`), so the sync can upsert idempotently.

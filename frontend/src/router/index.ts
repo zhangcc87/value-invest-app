@@ -12,6 +12,16 @@ const routes = [
             },
             { path: "/users", component: () => import("../views/Users.vue") },
             {
+                path: "/stocks",
+                name: "stock-list",
+                component: () => import("../views/StockList.vue"),
+            },
+            {
+                path: "/stocks/:code",
+                name: "stock-detail",
+                component: () => import("../views/StockDetail.vue"),
+            },
+            {
                 path: "/settings",
                 component: () => import("../views/Settings.vue"),
             },

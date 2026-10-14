@@ -132,6 +132,38 @@ $ alembic upgrade head
 
 If you don't want to start with the default models and want to remove them / modify them, from the beginning, without having any previous revision, you can remove the revision files (`.py` Python files) under `./backend/app/alembic/versions/`. And then create a first migration as described above.
 
+## Stock Data Sync (baostock)
+
+Phase 1 of the value-investing domain is a data foundation: A-share master data, daily price + valuation, and quarterly financials, pulled from [baostock](https://github.com/baostock/baostock) into PostgreSQL. Syncing is **CLI-driven** (`app/sync_data.py`) — there is no in-app scheduler, so trigger it from cron.
+
+From `./backend/`:
+
+```console
+$ uv run python app/sync_data.py stocks                          # master data + industry (~5.6k rows)
+$ uv run python app/sync_data.py daily --universe hs300          # daily price + valuation
+$ uv run python app/sync_data.py financial --quarters 4 --statements profit,growth,balance
+$ uv run python app/sync_data.py all                             # all three, in order
+```
+
+Common knobs (all subcommands): `--pace` (seconds between upstream requests, default `STOCK_SYNC_PACE_SECONDS`), `--retry`, `--universe all|hs300`, `--codes sh.600519,sz.000001`. `daily` also takes `--start`/`--end`; `financial` takes `--quarters` and `--statements` (`profit,growth,balance,cashflow,operation,dupont`).
+
+Each run writes a `SyncRun` row (`GET /api/v1/stocks/sync/runs`, superuser only). Progress is derived from the data, so **re-running is safe**: daily resumes from `max(trade_date)`, financial skips periods already stored, and every write is an idempotent upsert.
+
+Cost: a full-market 3-year backfill is an **overnight** job — daily is ~5.4k requests (tens of minutes); financial is ~5.4k × 12 quarters × 3 statements ≈ 190k requests (hours), bounded by server rate limits. Iterate with `--universe hs300` and a small `--quarters` first.
+
+A nightly cron (after baostock updates its data) looks like:
+
+```cron
+30 2 * * * cd /srv/value-invest-app/backend && uv run python app/sync_data.py all >> /var/log/value-invest-sync.log 2>&1
+```
+
+Caveats:
+
+* Ratios are stored as **decimals**, exactly as baostock returns them (`roe_avg=0.3446` means 34.46%); multiply by 100 for display.
+* `pub_date` is the announcement date — use `pub_date <= as_of` for any point-in-time screening, or you will introduce look-ahead bias.
+* baostock covers **only SH/SZ**; there is no 北交所 (BJ) coverage.
+* The `X_ttm`/`gp_margin`/etc. column set is fixed by the wide `financialreport` table, so enabling more statements later needs no migration.
+
 ## Email Templates
 
 The email templates are written with [React Email](https://react.email) in `./packages/react-email/`. The `emails` directory holds one component per email and the `ui` directory holds the shared components (layout, heading, button, link, callout).
